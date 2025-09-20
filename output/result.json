@@ -1,17 +1,17 @@
 {
-  "time": "2025-09-20 18:23:11",
+  "time": "2025-09-20 19:26:19",
   "rows": {
     "云": [
       {
         "buff": "起卦",
         "skill": "起卦",
         "cd": 25,
-        "start_at": "2025-09-20 18:23:11",
-        "expire_at": "2025-09-20 18:23:36",
+        "start_at": "2025-09-20 19:26:19",
+        "expire_at": "2025-09-20 19:26:44",
         "remain": 25,
         "duration": 8,
-        "duration_start_at": "2025-09-20 18:23:11",
-        "duration_expire_at": "2025-09-20 18:23:19",
+        "duration_start_at": "2025-09-20 19:26:19",
+        "duration_expire_at": "2025-09-20 19:26:27",
         "duration_remain": 8
       }
     ],
@@ -20,12 +20,12 @@
         "buff": "起卦",
         "skill": "起卦",
         "cd": 25,
-        "start_at": "2025-09-20 18:23:11",
-        "expire_at": "2025-09-20 18:23:36",
+        "start_at": "2025-09-20 19:26:19",
+        "expire_at": "2025-09-20 19:26:44",
         "remain": 25,
         "duration": 8,
-        "duration_start_at": "2025-09-20 18:23:11",
-        "duration_expire_at": "2025-09-20 18:23:19",
+        "duration_start_at": "2025-09-20 19:26:19",
+        "duration_expire_at": "2025-09-20 19:26:27",
         "duration_remain": 8
       }
     ],
@@ -34,12 +34,12 @@
         "buff": "起卦",
         "skill": "起卦",
         "cd": 25,
-        "start_at": "2025-09-20 18:23:11",
-        "expire_at": "2025-09-20 18:23:36",
+        "start_at": "2025-09-20 19:26:19",
+        "expire_at": "2025-09-20 19:26:44",
         "remain": 25,
         "duration": 8,
-        "duration_start_at": "2025-09-20 18:23:11",
-        "duration_expire_at": "2025-09-20 18:23:19",
+        "duration_start_at": "2025-09-20 19:26:19",
+        "duration_expire_at": "2025-09-20 19:26:27",
         "duration_remain": 8
       }
     ]

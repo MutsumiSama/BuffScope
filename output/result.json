@@ -8,7 +8,11 @@
         "cd": 25,
         "start_at": "2025-09-20 18:23:11",
         "expire_at": "2025-09-20 18:23:36",
-        "remain": 25
+        "remain": 25,
+        "duration": 8,
+        "duration_start_at": "2025-09-20 18:23:11",
+        "duration_expire_at": "2025-09-20 18:23:19",
+        "duration_remain": 8
       }
     ],
     "剑": [
@@ -18,7 +22,11 @@
         "cd": 25,
         "start_at": "2025-09-20 18:23:11",
         "expire_at": "2025-09-20 18:23:36",
-        "remain": 25
+        "remain": 25,
+        "duration": 8,
+        "duration_start_at": "2025-09-20 18:23:11",
+        "duration_expire_at": "2025-09-20 18:23:19",
+        "duration_remain": 8
       }
     ],
     "斧": [
@@ -28,7 +36,11 @@
         "cd": 25,
         "start_at": "2025-09-20 18:23:11",
         "expire_at": "2025-09-20 18:23:36",
-        "remain": 25
+        "remain": 25,
+        "duration": 8,
+        "duration_start_at": "2025-09-20 18:23:11",
+        "duration_expire_at": "2025-09-20 18:23:19",
+        "duration_remain": 8
       }
     ]
   }

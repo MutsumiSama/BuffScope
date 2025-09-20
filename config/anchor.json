@@ -1,0 +1,33 @@
+{
+  "cell_w": 32,
+  "cell_h": 32,
+  "gap": 3,
+  "max_buffs": 10,
+  "pad_top": 2,
+  "pad_bottom": 2,
+  "min_sim_to_draw": 0.75,
+  "draw_score": true,
+  "rows": [
+    {
+      "name": "云",
+      "anchor_id":18312,
+      "anchor_template": "config/anchor0.png",
+      "search_region": [0, 0, 2560, 1440],
+      "anchor_to_first_cell": [0, 0]
+    },
+    {
+      "name": "剑",
+      "anchor_id":18322,
+      "anchor_template": "config/anchor1.png",
+      "search_region": [0, 0, 2560, 1440],
+      "anchor_to_first_cell": [0, 0]
+    },
+    {
+      "name": "斧",
+      "anchor_id":12380,
+      "anchor_template": "config/anchor2.png",
+      "search_region": [0, 0, 2560, 1440],
+      "anchor_to_first_cell": [0, 0]
+    }
+  ]
+}

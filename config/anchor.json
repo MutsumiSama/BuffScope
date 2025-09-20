@@ -5,29 +5,36 @@
   "max_buffs": 10,
   "pad_top": 2,
   "pad_bottom": 2,
-  "min_sim_to_draw": 0.75,
+  "min_sim_to_draw": 0.9,
   "draw_score": true,
+  "skip_first_tile": false,
+  "mask_topleft": [8, 9],
+
   "rows": [
     {
       "name": "云",
-      "anchor_id":18312,
-      "anchor_template": "config/anchor0.png",
+      "anchor_template": "config/anchor_cloud.png",
       "search_region": [0, 0, 2560, 1440],
-      "anchor_to_first_cell": [0, 0]
+      "anchor_to_first_cell": [35, 0]
     },
     {
       "name": "剑",
-      "anchor_id":18322,
-      "anchor_template": "config/anchor1.png",
+      "anchor_template": "config/anchor_sword.png",
       "search_region": [0, 0, 2560, 1440],
-      "anchor_to_first_cell": [0, 0]
+      "anchor_to_first_cell": [35, 0]
     },
     {
       "name": "斧",
-      "anchor_id":12380,
-      "anchor_template": "config/anchor2.png",
+      "anchor_template": "config/anchor_axe.png",
       "search_region": [0, 0, 2560, 1440],
-      "anchor_to_first_cell": [0, 0]
+      "anchor_to_first_cell": [35, 0]
     }
-  ]
+  ],
+
+  "static_regions": true,
+  "anchor_cache": "output/anchor_cache.json",
+
+  "font_path": "C:/Windows/Fonts/msyh.ttc",
+  "debug_rows": true,
+  "show_window": false
 }

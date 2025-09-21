@@ -9,6 +9,11 @@
   "draw_score": true,
   "skip_first_tile": false,
   "mask_topleft": [8, 9],
+  "countdown": {
+    "enabled": true,
+    "gallery": "data/countdown",
+    "min_sim": 0.85
+  },
 
   "rows": [
     {

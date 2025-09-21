@@ -17,12 +17,28 @@ def annotate_and_save(full_img, results_all, output_path, cfg):
         font = ImageFont.load_default()
 
     for row_name, results in results_all.items():
-        for i, (x, y, lb, score) in enumerate(results):
+        for i, item in enumerate(results):
+            if isinstance(item, dict):
+                x = int(item.get("x", 0))
+                y = int(item.get("y", 0))
+                lb = item.get("label", "")
+                score = float(item.get("score", 0.0))
+                countdown = item.get("countdown")
+            else:
+                x, y, lb, score = item
+                countdown = None
             # 画框
             cv2.rectangle(vis, (x, y), (x+w, y+h), (0, 255, 0), 1)
             # 文件名直接显示
-            text = f"{row_name}:{lb}:{score:.2f}" if cfg.get("draw_score", False) \
-                   else f"{row_name}:{lb}"
+            text = f"{row_name}:{lb}"
+            if countdown is not None:
+                try:
+                    cd_val = int(round(float(countdown)))
+                except (TypeError, ValueError):
+                    cd_val = countdown
+                text = f"{text}({cd_val})"
+            if cfg.get("draw_score", False):
+                text = f"{text}:{score:.2f}"
             pos = (x, y - 18) if i % 2 == 0 else (x, y + h + 2)
             draw.text(pos, text, font=font, fill=(0,255,0,255))
 

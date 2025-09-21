@@ -125,3 +125,89 @@ def recognize_in_box(full_img, box_xywh, gallery, min_sim=0.75, mask_topleft=(0,
     for lb, (score, ax, ay) in best_by_class.items():
         results.append((ax, ay, lb, score))
     return results
+
+
+def enumerate_slots_in_box(box_xywh, global_cfg, countdown_size=None):
+    """根据固定检测区域，推算每个格子的标准位置。"""
+    start_x, start_y, area_w, _ = map(int, box_xywh)
+    cell_w = int(global_cfg.get("cell_w", 0))
+    cell_h = int(global_cfg.get("cell_h", 0))
+    gap = int(global_cfg.get("gap", 0))
+    max_slots = int(global_cfg.get("max_buffs", 0))
+    pad_top = int(global_cfg.get("pad_top", 0))
+
+    if countdown_size is None:
+        mask = global_cfg.get("mask_topleft", [0, 0])
+        try:
+            mask_w, mask_h = int(mask[0]), int(mask[1])
+        except (TypeError, ValueError, IndexError):
+            mask_w = mask_h = 0
+    else:
+        mask_w, mask_h = map(int, countdown_size)
+
+    if mask_w <= 0 or mask_h <= 0:
+        mask_w, mask_h = cell_w, cell_h
+
+    slots = []
+    if cell_w <= 0 or cell_h <= 0 or max_slots <= 0:
+        return slots
+
+    step = cell_w + gap
+    area_right = start_x + area_w
+    for idx in range(max_slots):
+        slot_x = start_x + idx * step
+        if slot_x + cell_w > area_right:
+            break
+        slots.append({
+            "slot": idx,
+            "x": slot_x,
+            "y": start_y + pad_top,
+            "w": mask_w,
+            "h": mask_h
+        })
+    return slots
+
+
+def recognize_countdowns_in_slots(full_img, slots, countdown_gallery, min_sim=0.8):
+    """在每个格子的倒计时区域内做模板匹配，返回识别到的数字。"""
+    results = {}
+    if not countdown_gallery or not slots:
+        return results
+
+    for slot in slots:
+        x, y, w, h = slot["x"], slot["y"], slot["w"], slot["h"]
+        roi = full_img[y:y+h, x:x+w]
+        if roi.shape[0] < h or roi.shape[1] < w:
+            continue
+
+        best = None
+        for temp, lb, _ in countdown_gallery:
+            if roi.shape[0] < temp.shape[0] or roi.shape[1] < temp.shape[1]:
+                continue
+            res = cv2.matchTemplate(roi, temp, cv2.TM_CCOEFF_NORMED)
+            _, max_val, _, _ = cv2.minMaxLoc(res)
+            if best is None or max_val > best[1]:
+                best = (lb, float(max_val))
+
+        if not best:
+            continue
+
+        label, score = best
+        if score < float(min_sim):
+            continue
+
+        try:
+            value = int(label)
+        except (TypeError, ValueError):
+            try:
+                value = int(str(label).strip())
+            except (TypeError, ValueError):
+                value = label
+
+        results[slot["slot"]] = {
+            "label": label,
+            "value": value,
+            "score": score
+        }
+
+    return results

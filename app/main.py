@@ -10,7 +10,8 @@ from .utils import (
 )
 from .detector import (
     match_anchor, recognize_in_box,
-    compute_row_area_from_anchor, load_gallery
+    compute_row_area_from_anchor, load_gallery,
+    enumerate_slots_in_box, recognize_countdowns_in_slots
 )
 from .visualizer import annotate_and_save
 from .cd_manager import compute_and_update_cd
@@ -22,25 +23,33 @@ SKILL_CFG      = "config/skill_cd.json"
 OUTPUT_IMG     = "output/result.png"
 OUTPUT_JSON    = "output/result.json"
 CD_STATE_PATH  = "output/cd_state.json"
+COUNTDOWN_DIR_DEFAULT = "data/countdown"
 
 def suppress_by_slots(results, box, cfg):
     """
     对一行的结果按“格”归并：每个格只保留最高分。
     results: [(x, y, label, score), ...]
+    返回值: [{"slot": idx, "x": x, "y": y, "label": label, "score": score}, ...]
     box: (start_x, start_y, area_w, area_h) —— 该行检测区域（从第1格或第2格开始，取决于配置）
     """
     start_x, start_y, area_w, area_h = map(int, box)
     step = cfg["cell_w"] + cfg["gap"]
     max_slots = cfg["max_buffs"]
 
-    slots = {}  # idx -> (x,y,lb,score)
+    slots = {}
     for (x, y, lb, sc) in results:
         idx = int(round((x - start_x) / step))
         if idx < 0 or idx >= max_slots:
             continue
         cur = slots.get(idx)
-        if (cur is None) or (sc > cur[3]):
-            slots[idx] = (x, y, lb, sc)
+        if (cur is None) or (sc > cur["score"]):
+            slots[idx] = {
+                "slot": idx,
+                "x": int(x),
+                "y": int(y),
+                "label": lb,
+                "score": float(sc)
+            }
 
     # 按槽序输出（稳定顺序）
     return [slots[i] for i in sorted(slots.keys())]
@@ -66,6 +75,29 @@ def main(image_path: str):
     if not gallery:
         print(f"❌ 图库为空：{GALLERY_DIR}")
         return
+
+    mask_tl = tuple(cfg.get("mask_topleft", [0, 0]))
+    try:
+        mask_w = int(mask_tl[0])
+        mask_h = int(mask_tl[1])
+    except (TypeError, ValueError, IndexError):
+        mask_w = mask_h = 0
+
+    countdown_cfg = cfg.get("countdown", {}) or {}
+    countdown_enabled = bool(countdown_cfg.get("enabled", True))
+    countdown_dir = countdown_cfg.get("gallery", COUNTDOWN_DIR_DEFAULT)
+    countdown_min_sim = float(countdown_cfg.get("min_sim", 0.85))
+    countdown_gallery = []
+    countdown_size = (mask_w, mask_h)
+
+    if countdown_enabled and mask_w > 0 and mask_h > 0:
+        countdown_gallery = load_gallery(countdown_dir, target_size=countdown_size)
+        if countdown_gallery:
+            print(f"ℹ️ 倒计时模板：{len(countdown_gallery)} 个，目录：{countdown_dir}")
+        else:
+            print(f"⚠️ 倒计时模板为空或未找到：{countdown_dir}")
+    elif countdown_enabled:
+        print("⚠️ mask_topleft 配置无效，跳过倒计时识别。")
 
     # 读取/计算固定区域（每行锚一次）
     use_static    = bool(cfg.get("static_regions", True))
@@ -131,21 +163,42 @@ def main(image_path: str):
 
     # 在固定区域内做模板匹配（加入 mask_topleft 支持）
     results_all = {}
-    # 在固定区域内做模板匹配（加入 mask_topleft 支持）
-    results_all = {}
     min_sim = float(cfg.get("min_sim_to_draw", 0.74))
-    mask_tl = tuple(cfg.get("mask_topleft", [0, 0]))
+
+    countdown_active = bool(countdown_gallery)
 
     for row in cfg["rows"]:
         rn = row["name"]
         box = areas_by_row.get(rn)
         if not box:
             continue
-        results = recognize_in_box(
+        results_raw = recognize_in_box(
             img, box, gallery, min_sim=min_sim, mask_topleft=mask_tl
         )
-        # ★ 关键：对一行的结果按“格”归并，只保留每格最高分
-        results = suppress_by_slots(results, box, cfg)
+        results = suppress_by_slots(results_raw, box, cfg)
+
+        if countdown_active:
+            slots = enumerate_slots_in_box(box, cfg, countdown_size=countdown_size)
+            slot_map = {slot["slot"]: slot for slot in slots}
+            countdown_matches = recognize_countdowns_in_slots(
+                img, slots, countdown_gallery, min_sim=countdown_min_sim
+            )
+            for item in results:
+                match = countdown_matches.get(item["slot"])
+                slot_info = slot_map.get(item["slot"])
+                if slot_info:
+                    item["countdown_box"] = [
+                        int(slot_info["x"]),
+                        int(slot_info["y"]),
+                        int(slot_info["w"]),
+                        int(slot_info["h"])
+                    ]
+                if match:
+                    item["countdown"] = match.get("value")
+                    item["countdown_score"] = match.get("score")
+                else:
+                    item["countdown"] = None
+                    item["countdown_score"] = None
         results_all[rn] = results
 
     # 计算/更新 CD 并输出快照

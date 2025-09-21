@@ -74,10 +74,18 @@ def _start_skill_record(row_state: Dict[str, Dict[str, Any]],
                         label: str,
                         info: Dict[str, Any],
                         now: float,
+                        countdown: Optional[Any] = None,
                         force: bool = False) -> None:
     skill_name = str(info.get("skill", label))
     cd_val = _to_float(info.get("cd")) or 0.0
     duration_val = _to_float(info.get("duration")) or 0.0
+
+    if isinstance(countdown, dict):
+        countdown_val = _to_float(countdown.get("value"))
+        if countdown_val is None:
+            countdown_val = _to_float(countdown.get("remain"))
+    else:
+        countdown_val = _to_float(countdown)
 
     if cd_val <= 0 and duration_val <= 0:
         return
@@ -86,7 +94,8 @@ def _start_skill_record(row_state: Dict[str, Dict[str, Any]],
 
     cd_active = False
     duration_active = False
-    if rec and not force:
+    has_countdown = countdown_val is not None
+    if rec and not force and not has_countdown:
         cd_active = _is_timer_active(rec.get("cd"), _to_float(rec.get("end")), now) if cd_val > 0 else False
         duration_active = _is_timer_active(rec.get("duration"), None, now) if duration_val > 0 else False
         if cd_active or duration_active:
@@ -97,19 +106,45 @@ def _start_skill_record(row_state: Dict[str, Dict[str, Any]],
     rec["buff"] = label
     rec["skill"] = skill_name
 
+    remain = None
+    if countdown_val is not None:
+        remain = max(0.0, countdown_val)
+        if duration_val > 0:
+            remain = min(duration_val, remain)
+
+    base_start = now
+
+    if duration_val > 0:
+        if remain is not None:
+            duration_start = now + remain - duration_val
+            duration_end = duration_start + duration_val
+        else:
+            duration_start = now
+            duration_end = now + duration_val
+        rec["duration"] = {
+            "start": duration_start,
+            "end": duration_end,
+            "value": duration_val
+        }
+        base_start = duration_start
+    else:
+        rec.pop("duration", None)
+
+    if remain is not None:
+        rec["last_countdown"] = remain
+    elif countdown_val is not None:
+        rec["last_countdown"] = max(0.0, countdown_val)
+
     if cd_val > 0:
-        rec["cd"] = {"start": now, "end": now + cd_val, "value": cd_val}
-        rec["start"] = now
-        rec["end"] = now + cd_val
+        cd_start = base_start
+        cd_end = cd_start + cd_val
+        rec["cd"] = {"start": cd_start, "end": cd_end, "value": cd_val}
+        rec["start"] = cd_start
+        rec["end"] = cd_end
     else:
         rec.pop("cd", None)
         rec.pop("start", None)
         rec.pop("end", None)
-
-    if duration_val > 0:
-        rec["duration"] = {"start": now, "end": now + duration_val, "value": duration_val}
-    else:
-        rec.pop("duration", None)
 
     row_state[skill_name] = rec
 
@@ -155,6 +190,10 @@ def _build_snapshot_entry(skill: str,
     entry["duration_expire_at"] = _fmt(duration_end) if duration_end is not None else None
     entry["duration_remain"] = _sec(duration_remain)
 
+    last_countdown = rec.get("last_countdown")
+    if last_countdown is not None:
+        entry["last_countdown"] = _sec(last_countdown)
+
     sort_candidates = [ts for ts in (cd_end, duration_end) if ts is not None]
     sort_ts = min(sort_candidates) if sort_candidates else float("inf")
     return sort_ts, entry
@@ -175,7 +214,7 @@ def _build_rows_snapshot(rows_state: Dict[str, Dict[str, Dict[str, Any]]],
     return rows_snapshot
 
 
-def compute_and_update_cd(results_all: Dict[str, List[Tuple[int, int, str, float]]],
+def compute_and_update_cd(results_all: Dict[str, List[Any]],
                           skill_map_path: str,
                           state_path: str,
                           now_ts: Optional[float] = None) -> Dict:
@@ -186,11 +225,21 @@ def compute_and_update_cd(results_all: Dict[str, List[Tuple[int, int, str, float
 
     for row_name, detects in results_all.items():
         row_state = state["rows"].setdefault(row_name, {})
-        for _, _, label, _ in detects:
+        for detect in detects:
+            if isinstance(detect, dict):
+                label = detect.get("label")
+                countdown_val = detect.get("countdown")
+            else:
+                if len(detect) < 3:
+                    continue
+                label = detect[2]
+                countdown_val = None
+            if not label:
+                continue
             info = skill_map.get(label)
             if not info:
                 continue
-            _start_skill_record(row_state, label, info, now)
+            _start_skill_record(row_state, label, info, now, countdown=countdown_val)
 
     snapshot_rows = _build_rows_snapshot(state["rows"], now)
     snapshot = {"time": _fmt(now), "rows": snapshot_rows}
